@@ -20,16 +20,16 @@ object RemoteReDeploymentMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
+  val timeFactor = ConfigFactory.load().getInt("akka.test.timefactor")
   commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(
-    """akka.remote.transport-failure-detector {
-         threshold=0.1
-         heartbeat-interval=0.1s
-         acceptable-heartbeat-pause=1s
+    s"""akka.remote.transport-failure-detector {
+         heartbeat-interval=${0.1 * timeFactor}s
+         acceptable-heartbeat-pause=${1 * timeFactor}s
        }
        akka.remote.watch-failure-detector {
          threshold=0.1
-         heartbeat-interval=0.1s
-         acceptable-heartbeat-pause=2.5s
+         heartbeat-interval=${0.1 * timeFactor}s
+         acceptable-heartbeat-pause=${2.5 * timeFactor}s
        }""")))
   testTransport(on = true)
 

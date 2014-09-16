@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.duration.Duration
 import com.typesafe.config.Config
 import akka.dispatch.ThreadPoolConfig
+import akka.testkit.TestDuration
 
 /**
  * Access to the [[akka.remote.testconductor.TestConductorExt]] extension:
@@ -62,8 +63,8 @@ class TestConductorExt(val system: ExtendedActorSystem) extends Extension with C
     val ClientReconnects = config.getInt("client-reconnects")
     val ReconnectBackoff = config.getMillisDuration("reconnect-backoff")
 
-    implicit val BarrierTimeout = Timeout(config.getMillisDuration("barrier-timeout"))
-    implicit val QueryTimeout = Timeout(config.getMillisDuration("query-timeout"))
+    implicit val BarrierTimeout = Timeout(config.getMillisDuration("barrier-timeout").dilated(system))
+    implicit val QueryTimeout = Timeout(config.getMillisDuration("query-timeout").dilated(system))
     val PacketSplitThreshold = config.getMillisDuration("packet-split-threshold")
 
     private def computeWPS(config: Config): Int =

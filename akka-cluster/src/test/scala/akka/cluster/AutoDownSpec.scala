@@ -14,6 +14,7 @@ import akka.actor.Props
 import akka.cluster.MemberStatus._
 import akka.cluster.ClusterEvent._
 import akka.testkit.AkkaSpec
+import akka.testkit.TestDuration
 
 object AutoDownSpec {
   final case class DownCalled(address: Address)
@@ -72,7 +73,7 @@ class AutoDownSpec extends AkkaSpec {
     }
 
     "down unreachable after specified duration" in {
-      val a = autoDownActor(2.seconds)
+      val a = autoDownActor(2.seconds.dilated)
       a ! LeaderChanged(Some(memberA.address))
       a ! UnreachableMember(memberB)
       expectNoMsg(1.second)
@@ -80,7 +81,7 @@ class AutoDownSpec extends AkkaSpec {
     }
 
     "down unreachable when becoming leader inbetween detection and specified duration" in {
-      val a = autoDownActor(2.seconds)
+      val a = autoDownActor(2.seconds.dilated)
       a ! LeaderChanged(Some(memberB.address))
       a ! UnreachableMember(memberC)
       a ! LeaderChanged(Some(memberA.address))
