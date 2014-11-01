@@ -1,6 +1,7 @@
 import com.typesafe.sbt.osgi.SbtOsgi._
 import sbt.Keys._
 import sbt._
+import sbt.plugins.JvmPlugin
 
 object CommonSettings extends AutoPlugin {
 
@@ -11,9 +12,13 @@ object CommonSettings extends AutoPlugin {
   def versionedImport(packageName: String, lower: String, upper: String) = s"""$packageName;version="[$lower,$upper)""""
   val Seq(scalaEpoch, scalaMajor) = """(\d+)\.(\d+)\..*""".r.unapplySeq(Dependencies.Versions.scalaVersion).get.map(_.toInt)
 
+  override def requires: Plugins = JvmPlugin
   override def trigger = allRequirements
 
   override lazy val projectSettings = Seq(
+    organization := "com.typesafe.akka",
+    version := "2.4-SNAPSHOT",
+
     target := baseDirectory.value / "target-sbt",
 
     // The included osgiSettings that creates bundles also publish the jar files

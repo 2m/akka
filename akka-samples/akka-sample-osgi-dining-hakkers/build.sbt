@@ -1,5 +1,5 @@
 lazy val root = (project in file(".")).
-  aggregate(api, command)
+  aggregate(api, command, core, `integration-test`)
 
 lazy val api = project
 lazy val command = project.dependsOn(api)
