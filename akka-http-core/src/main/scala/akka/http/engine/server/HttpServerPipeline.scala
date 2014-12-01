@@ -6,12 +6,13 @@ package akka.http.engine.server
 
 import akka.actor.{ Props, ActorRef }
 import akka.event.LoggingAdapter
-import akka.stream.stage.PushPullStage
+import akka.stream.scaladsl.OperationAttributes._
 import akka.util.ByteString
 import akka.stream.io.StreamTcp
 import akka.stream.FlattenStrategy
 import akka.stream.FlowMaterializer
 import akka.stream.scaladsl._
+import akka.stream.stage.PushPullStage
 import akka.http.engine.parsing.{ HttpHeaderParser, HttpRequestParser }
 import akka.http.engine.rendering.{ ResponseRenderingContext, HttpResponseRendererFactory }
 import akka.http.model._
@@ -56,10 +57,10 @@ private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAda
 
   val rendererPipeline =
     Flow[ResponseRenderingContext]
-      .transform("recover", () ⇒ new ErrorsTo500ResponseRecovery(log)) // FIXME: simplify after #16394 is closed
-      .transform("renderer", () ⇒ responseRendererFactory.newRenderer)
+      .section(name("recover"))(_.transform(() ⇒ new ErrorsTo500ResponseRecovery(log))) // FIXME: simplify after #16394 is closed
+      .section(name("renderer"))(_.transform(() ⇒ responseRendererFactory.newRenderer))
       .flatten(FlattenStrategy.concat)
-      .transform("errorLogger", () ⇒ errorLogger(log, "Outgoing response stream error"))
+      .section(name("errorLogger"))(_.transform(() ⇒ errorLogger(log, "Outgoing response stream error")))
 
   def apply(tcpConn: StreamTcp.IncomingTcpConnection): Http.IncomingConnection = {
     import FlowGraphImplicits._
@@ -79,10 +80,10 @@ private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAda
     // FIXME The whole pipeline can maybe be created up front when #16168 is fixed
     val pipeline = Flow() { implicit b ⇒
 
-      val requestParsing = Flow[ByteString].transform("rootParser", () ⇒
+      val requestParsing = Flow[ByteString].section(name("rootParser"))(_.transform(() ⇒
         // each connection uses a single (private) request parser instance for all its requests
         // which builds a cache of all header instances seen on that connection
-        rootParser.createShallowCopy(() ⇒ oneHundredContinueRef))
+        rootParser.createShallowCopy(() ⇒ oneHundredContinueRef)))
 
       //FIXME: the graph is unnecessary after fixing #15957
       userOut ~> bypassMerge.applicationInput ~> rendererPipeline ~> tcpConn.stream ~> requestParsing ~> bypassFanout ~> requestPreparation ~> userIn

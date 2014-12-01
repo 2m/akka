@@ -8,6 +8,7 @@ import java.net.InetSocketAddress
 import scala.collection.immutable.Queue
 import akka.stream.scaladsl._
 import akka.event.LoggingAdapter
+import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.FlattenStrategy
 import akka.stream.io.StreamTcp
 import akka.util.ByteString
@@ -58,16 +59,16 @@ private[http] class HttpClientPipeline(effectiveSettings: ClientConnectionSettin
       val requestPipeline =
         Flow[HttpRequest]
           .map(requestMethodByPass)
-          .transform("renderer", () ⇒ requestRendererFactory.newRenderer)
+          .section(name("renderer"))(_.transform(() ⇒ requestRendererFactory.newRenderer))
           .flatten(FlattenStrategy.concat)
-          .transform("errorLogger", () ⇒ errorLogger(log, "Outgoing request stream error"))
+          .section(name("errorLogger"))(_.transform(() ⇒ errorLogger(log, "Outgoing request stream error")))
 
       val responsePipeline =
         Flow[ByteString]
-          .transform("rootParser", () ⇒
+          .section(name("rootParser"))(_.transform(() ⇒
             // each connection uses a single (private) response parser instance for all its responses
             // which builds a cache of all header instances seen on that connection
-            rootParser.createShallowCopy(requestMethodByPass))
+            rootParser.createShallowCopy(requestMethodByPass)))
           .splitWhen(_.isInstanceOf[MessageStart])
           .headAndTail
           .collect {
