@@ -14,7 +14,6 @@ object Publish extends AutoPlugin {
   override def trigger = allRequirements
 
   override lazy val projectSettings = Seq(
-    crossPaths := false,
     pomExtra := akkaPomExtra,
     publishTo := akkaPublishTo.value,
     credentials ++= akkaCredentials,

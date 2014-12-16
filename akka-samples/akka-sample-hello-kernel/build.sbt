@@ -2,7 +2,9 @@ import NativePackagerKeys._
 
 packageArchetype.akka_application
 
-name := """hello-kernel"""
+name := "akka-sample-hello-kernel"
+
+version := "2.4-SNAPSHOT"
 
 mainClass in Compile := Some("sample.kernel.hello.HelloKernel")
 

@@ -12,22 +12,36 @@ object TimeStampede extends AutoPlugin {
   override def trigger = allRequirements
 
   override lazy val projectSettings = Seq(
-    commands += stampVersion
+    commands ++= Seq(
+      Command.command("stampVersion")(stampVersion),
+
+      /**
+       * Used for cross-publishing stamped versions. Needed because time stamped
+       * versions are reset on scala version change if used with +publish.
+       */
+      Command.command("stampVersionAndPublish")(stampVersion andThen publish)
+    )
   )
 
   final val Snapshot = "-SNAPSHOT"
 
-  def stampVersion = Command.command("stampVersion") { state =>
+  private val stampVersion: State => State = (state) => {
     val extracted = Project.extract(state)
     extracted.append(List(version in ThisBuild ~= stamp), state)
   }
 
-  def stamp(version: String): String = {
+  private val publish: State => State = (state) => {
+    val extracted = Project.extract(state)
+    val projectRef = extracted.get(thisProjectRef)
+    extracted.runAggregated(Keys.publish in projectRef, state)
+  }
+
+  private def stamp(version: String): String = {
     if (version endsWith Snapshot) (version stripSuffix Snapshot) + "-" + timestamp(System.currentTimeMillis)
     else version
   }
 
-  def timestamp(time: Long): String = {
+  private def timestamp(time: Long): String = {
     val format = new java.text.SimpleDateFormat("yyyyMMdd-HHmmss")
     format.format(new java.util.Date(time))
   }
