@@ -581,6 +581,39 @@ class TcpConnectionSpec extends AkkaSpec("""
       }
     }
 
+    "unwatch actor after commander Close" in new EstablishedConnectionTest() {
+      run {
+        val watcher = TestProbe()
+        watcher.watch(connectionActor)
+
+        // Set buffer to small
+        // We might not always get the desired value, because it might be lower than the minimum.
+        // Therefore check if the size has decreased.
+        val initialBufferSize = clientSideChannel.socket.getSendBufferSize
+        clientSideChannel.socket.setSendBufferSize(1024)
+        awaitCond(clientSideChannel.socket.getSendBufferSize < initialBufferSize)
+
+        awaitAssert({
+          userHandler.send(connectionActor, writeCmd(Ack))
+          userHandler.expectNoMsg(1.seconds)
+        }, max = 5.seconds, interval = 10.millis)
+
+        // This Close now arrives when there is a pending write
+        userHandler.send(connectionActor, Close)
+        userHandler.ref ! PoisonPill
+
+        // The connection actor should not die yet, because it is still flushing (it should have unwatched
+        // the user actor by now)
+        watcher.expectNoMsg(1.second)
+
+        // enable writing again
+        selector.send(connectionActor, ChannelWritable)
+
+        // the data bytes should arrive now
+        assertThisConnectionActorTerminated()
+      }
+    }
+
     val UnboundAddress = temporaryServerAddress()
 
     "report failed connection attempt when target is unreachable" in

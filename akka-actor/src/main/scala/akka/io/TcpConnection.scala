@@ -38,6 +38,16 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   private[this] var readingSuspended = pullMode
   private[this] var interestedInResume: Option[ActorRef] = None
   var closedMessage: CloseInformation = _ // for ConnectionClosed message in postStop
+  private var watchedActor: ActorRef = context.system.deadLetters
+
+  def signDeathPact(actor: ActorRef): Unit = {
+    unsignDeathPact()
+    watchedActor = actor
+    context.watch(watchedActor)
+  }
+
+  def unsignDeathPact(): Unit =
+    if (watchedActor ne context.system.deadLetters) context.unwatch(watchedActor)
 
   def writePending = pendingWrite ne EmptyPendingWrite
 
@@ -237,32 +247,37 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     else PeerClosed
 
   def handleClose(info: ConnectionInfo, closeCommander: Option[ActorRef],
-                  closedEvent: ConnectionClosed): Unit = closedEvent match {
-    case Aborted ⇒
-      if (TraceLogging) log.debug("Got Abort command. RESETing connection.")
-      doCloseConnection(info.handler, closeCommander, closedEvent)
-    case PeerClosed if info.keepOpenOnPeerClosed ⇒
-      // report that peer closed the connection
-      info.handler ! PeerClosed
-      // used to check if peer already closed its side later
-      peerClosed = true
-      context.become(peerSentEOF(info))
-    case _ if writePending ⇒ // finish writing first
-      if (TraceLogging) log.debug("Got Close command but write is still pending.")
-      context.become(closingWithPendingWrite(info, closeCommander, closedEvent))
-    case ConfirmedClosed ⇒ // shutdown output and wait for confirmation
-      if (TraceLogging) log.debug("Got ConfirmedClose command, sending FIN.")
+                  closedEvent: ConnectionClosed): Unit = {
+    // Our registered actor is now free to terminate cleanly
+    if (!(closedEvent.isConfirmed || closedEvent.isPeerClosed)) unsignDeathPact()
 
-      // If peer closed first, the socket is now fully closed.
-      // Also, if shutdownOutput threw an exception we expect this to be an indication
-      // that the peer closed first or concurrently with this code running.
-      // also see http://bugs.sun.com/view_bug.do?bug_id=4516760
-      if (peerClosed || !safeShutdownOutput())
+    closedEvent match {
+      case Aborted ⇒
+        if (TraceLogging) log.debug("Got Abort command. RESETing connection.")
         doCloseConnection(info.handler, closeCommander, closedEvent)
-      else context.become(closing(info, closeCommander))
-    case _ ⇒ // close now
-      if (TraceLogging) log.debug("Got Close command, closing connection.")
-      doCloseConnection(info.handler, closeCommander, closedEvent)
+      case PeerClosed if info.keepOpenOnPeerClosed ⇒
+        // report that peer closed the connection
+        info.handler ! PeerClosed
+        // used to check if peer already closed its side later
+        peerClosed = true
+        context.become(peerSentEOF(info))
+      case _ if writePending ⇒ // finish writing first
+        if (TraceLogging) log.debug("Got Close command but write is still pending.")
+        context.become(closingWithPendingWrite(info, closeCommander, closedEvent))
+      case ConfirmedClosed ⇒ // shutdown output and wait for confirmation
+        if (TraceLogging) log.debug("Got ConfirmedClose command, sending FIN.")
+
+        // If peer closed first, the socket is now fully closed.
+        // Also, if shutdownOutput threw an exception we expect this to be an indication
+        // that the peer closed first or concurrently with this code running.
+        // also see http://bugs.sun.com/view_bug.do?bug_id=4516760
+        if (peerClosed || !safeShutdownOutput())
+          doCloseConnection(info.handler, closeCommander, closedEvent)
+        else context.become(closing(info, closeCommander))
+      case _ ⇒ // close now
+        if (TraceLogging) log.debug("Got Close command, closing connection.")
+        doCloseConnection(info.handler, closeCommander, closedEvent)
+    }
   }
 
   def doCloseConnection(handler: ActorRef, closeCommander: Option[ActorRef], closedEvent: ConnectionClosed): Unit = {
