@@ -77,11 +77,11 @@ object Dependencies {
     object Provided {
       // TODO remove from "test" config
       val sigarLoader  = "io.kamon"         % "sigar-loader"        % "1.6.6-rev002"     %     "optional;provided;test" // ApacheV2
-      
+
       val levelDB       = "org.iq80.leveldb"            % "leveldb"          % "0.7"    %  "optional;provided"     // ApacheV2
       val levelDBNative = "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"    %  "optional;provided"     // New BSD
     }
-    
+
   }
 
   import Compile._
@@ -98,13 +98,13 @@ object Dependencies {
   val remoteTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.scalaXml)
 
   val cluster = l ++= Seq(Test.junit, Test.scalatest.value)
-  
+
   val clusterTools = l ++= Seq(Test.junit, Test.scalatest.value)
-  
+
   val clusterSharding = l ++= Seq(Provided.levelDB, Provided.levelDBNative, Test.junit, Test.scalatest.value, Test.commonsIo)
 
   val clusterMetrics = l ++= Seq(Provided.sigarLoader, Test.slf4jJul, Test.slf4jLog4j, Test.logback, Test.mockito)
-  
+
   val distributedData = l ++= Seq(Test.junit, Test.scalatest.value)
 
   val slf4j = l ++= Seq(slf4jApi, Test.logback)
@@ -126,6 +126,6 @@ object Dependencies {
   val docs = l ++= Seq(Test.scalatest.value, Test.junit, Test.junitIntf, Docs.sprayJson, Docs.gson)
 
   val contrib = l ++= Seq(Test.junitIntf, Test.commonsIo)
-  
+
   val benchJmh = l ++= Seq(Provided.levelDB, Provided.levelDBNative)
 }

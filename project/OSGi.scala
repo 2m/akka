@@ -27,13 +27,13 @@ object OSGi {
   val camel = exports(Seq("akka.camel.*"))
 
   val cluster = exports(Seq("akka.cluster.*"))
-  
+
   val clusterTools = exports(Seq("akka.cluster.singleton.*", "akka.cluster.client.*", "akka.cluster.pubsub.*"))
-      
-  val clusterSharding = exports(Seq("akka.cluster.sharding.*"))    
+
+  val clusterSharding = exports(Seq("akka.cluster.sharding.*"))
 
   val clusterMetrics = exports(Seq("akka.cluster.metrics.*"), imports = Seq(kamonImport(), sigarImport()))
-  
+
   val distributedData = exports(Seq("akka.cluster.ddata.*"))
 
   val contrib = exports(Seq("akka.contrib.*"))
