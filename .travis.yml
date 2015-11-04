@@ -1,0 +1,51 @@
+sudo: false
+
+cache:
+  directories:
+  - $HOME/.ivy2
+  - $HOME/.sbt/boot
+  - $HOME/.sbt/launchers
+
+language: scala
+
+scala:
+  - 2.11.7
+
+jdk:
+  - oraclejdk8
+
+env:
+  matrix:
+    - TEST_COMMAND="akka-actor-tests/test"
+    - TEST_COMMAND="akka-agent/test"
+    - TEST_COMMAND="akka-camel/test"
+    - TEST_COMMAND="akka-cluster/test"
+    - TEST_COMMAND="akka-cluster/multi-jvm:test"
+    - TEST_COMMAND="akka-cluster-metrics/test"
+    - TEST_COMMAND="akka-cluster-metrics/multi-jvm:test"
+    - TEST_COMMAND="akka-cluster-sharding/test"
+    - TEST_COMMAND="akka-cluster-sharding/multi-jvm:test"
+    - TEST_COMMAND="akka-cluster-tools/test"
+    - TEST_COMMAND="akka-cluster-tools/multi-jvm:test"
+    - TEST_COMMAND="akka-contrib/test"
+    - TEST_COMMAND="akka-contrib/multi-jvm:test"
+    - TEST_COMMAND="akka-distributed-data/test"
+    - TEST_COMMAND="akka-distributed/multi-jvm:test"
+    - TEST_COMMAND="akka-docs/test"
+    - TEST_COMMAND="akka-kernel/test"
+    - TEST_COMMAND="akka-multi-node-testkit/test"
+    - TEST_COMMAND="akka-osgi/test"
+    - TEST_COMMAND="akka-persistence/test"
+    - TEST_COMMAND="akka-persistence-query/test"
+    - TEST_COMMAND="akka-persistence-tck/test"
+    - TEST_COMMAND="akka-remote-tests/test"
+    - TEST_COMMAND="akka-slf4j/test"
+    - TEST_COMMAND="akka-testkit/test"
+    - TEST_COMMAND="akka-typed/test"
+
+script:
+  - sbt -J-XX:ReservedCodeCacheSize=256M $TEST_COMMAND
+
+  # Tricks to avoid unnecessary cache updates
+  - find $HOME/.sbt -name "*.lock" | xargs rm
+  - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
