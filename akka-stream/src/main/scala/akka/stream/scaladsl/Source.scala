@@ -323,7 +323,7 @@ object Source {
   }
 
   /**
-   * Combines several sources with fun-in strategy like `Merge` or `Concat` and returns `Source`.
+   * Combines several sources with fan-in strategy like `Merge` or `Concat` and returns `Source`.
    */
   def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(strategy: Int ⇒ Graph[UniformFanInShape[T, U], Unit]): Source[U, Unit] =
     Source.fromGraph(FlowGraph.create() { implicit b ⇒

@@ -14,6 +14,9 @@ import scala.util.control.{ NoStackTrace, NonFatal }
 import akka.event.Logging.simpleName
 import scala.annotation.tailrec
 import java.util.concurrent.atomic.AtomicLong
+import akka.stream.impl.fusing.GraphModule
+import akka.stream.impl.fusing.GraphInterpreter.GraphAssembly
+import akka.stream.stage.GraphStageWithMaterializedValue
 
 /**
  * INTERNAL API
@@ -21,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong
 private[akka] object StreamLayout {
 
   // compile-time constant
-  final val Debug = false
+  final val Debug = true
 
   final def validate(m: Module, level: Int = 0, doPrint: Boolean = false, idMap: mutable.Map[AnyRef, Int] = mutable.Map.empty): Unit = {
     val ids = Iterator from 1
@@ -166,13 +169,120 @@ private[akka] object StreamLayout {
         if (upstreams.contains(to)) s"The input port [$to] is already connected"
         else s"The input port [$to] is not part of the underlying graph.")
 
-      CompositeModule(
-        subModules,
-        AmorphousShape(shape.inlets.filterNot(_ == to), shape.outlets.filterNot(_ == from)),
-        downstreams.updated(from, to),
-        upstreams.updated(to, from),
-        materializedValueComputation,
-        attributes)
+      // find modules that correspond to ports being wired, these modules will be fused, if both are GraphModules
+      val modulesFrom = subModules.filter(_.outPorts.contains(from))
+      val modulesTo = subModules.filter(_.inPorts.contains(to))
+
+      require(modulesFrom.size == 1)
+      require(modulesTo.size == 1)
+
+      val moduleFrom = modulesFrom.head
+      val moduleTo = modulesTo.head
+
+      def isGraphModule(m: Module): Boolean = m match {
+        case m: GraphModule  ⇒ true
+        case m: CopiedModule ⇒ isGraphModule(m.copyOf)
+        case other           ⇒ false
+      }
+
+      if (isGraphModule(moduleFrom) && isGraphModule(moduleTo) && moduleFrom != moduleTo) {
+        println(s"Will fuse $moduleFrom[${moduleFrom.shape}] and $moduleTo[${moduleTo.shape}]")
+
+        def toGraphModule(m: Module): GraphModule = m match {
+          case m: CopiedModule ⇒ toGraphModule(m.copyOf)
+          case m: GraphModule  ⇒ m
+        }
+
+        val mFrom = toGraphModule(moduleFrom)
+        val mTo = toGraphModule(moduleTo)
+
+        // outlets being wired might correspond to different inside outlets of when modules are CopiedModule,
+        // get inside wires here
+        val subFrom = mFrom.shape.outlets(moduleFrom.shape.outlets.indexOf(from))
+        val subTo = mTo.shape.inlets(moduleTo.shape.inlets.indexOf(to))
+
+        println(s"Inside wire from $subFrom[${subFrom.hashCode}] to $subTo[${subTo.hashCode}]")
+
+        val mFromConnectionIdx = mFrom.assembly.outs.indexOf(subFrom)
+        val mToConnectionIdx = mTo.assembly.ins.indexOf(subTo)
+
+        val fusedShape = AmorphousShape(moduleFrom.shape.inlets ++ moduleTo.shape.inlets.filterNot(_ == to), moduleFrom.shape.outlets.filterNot(_ == from) ++ moduleTo.shape.outlets)
+
+        val newEnclosingShape = AmorphousShape(shape.inlets.filterNot(_ == to), shape.outlets.filterNot(_ == from))
+
+        val subs = subModules.filterNot(_ == moduleFrom).filterNot(_ == moduleTo)
+
+        val mFromOriginalOutIdxs = mFrom.assembly.outs.zipWithIndex.collect { case (out, idx) if out == null ⇒ idx }
+        val mToOriginalOutIdx = mTo.assembly.outs.zipWithIndex.collect { case (out, idx) if out == null && idx != mToConnectionIdx ⇒ idx }
+
+        val mFromOriginalInIdxs = mFrom.assembly.ins.zipWithIndex.collect { case (in, idx) if in == null && idx != mFromConnectionIdx ⇒ idx }
+        val mToOriginalInIdxs = mTo.assembly.ins.zipWithIndex.collect { case (in, idx) if in == null ⇒ idx }
+
+        val mFromConnectionIdxs = mFrom.assembly.outs.indices.diff(mFromOriginalOutIdxs ++ mFromOriginalInIdxs :+ mFromConnectionIdx)
+        val mToConnectionIdxs = mTo.assembly.outs.indices.diff(mToOriginalOutIdx ++ mToOriginalInIdxs :+ mToConnectionIdx)
+
+        val mToStageOffset = mFrom.assembly.stages.size
+
+        val ins =
+          mFrom.assembly.ins.zipWithIndex.collect { case (in, idx) if mFromOriginalOutIdxs.contains(idx) ⇒ in } ++
+            mTo.assembly.ins.zipWithIndex.collect { case (in, idx) if mToOriginalOutIdx.contains(idx) ⇒ in } ++
+            mFrom.assembly.ins.zipWithIndex.collect { case (in, idx) if mFromConnectionIdxs.contains(idx) ⇒ in } ++
+            mTo.assembly.ins.zipWithIndex.collect { case (in, idx) if mToConnectionIdxs.contains(idx) ⇒ in } ++
+            Array(mTo.assembly.ins(mToConnectionIdx)) ++
+            Array.fill(mFromOriginalInIdxs.size + mToOriginalInIdxs.size)(null)
+
+        val inOwners =
+          mFrom.assembly.inOwners.zipWithIndex.collect { case (in, idx) if mFromOriginalOutIdxs.contains(idx) ⇒ in } ++
+            mTo.assembly.inOwners.zipWithIndex.collect { case (in, idx) if mToOriginalOutIdx.contains(idx) ⇒ in + mToStageOffset } ++
+            mFrom.assembly.inOwners.zipWithIndex.collect { case (in, idx) if mFromConnectionIdxs.contains(idx) ⇒ in } ++
+            mTo.assembly.inOwners.zipWithIndex.collect { case (in, idx) if mToConnectionIdxs.contains(idx) ⇒ in + mToStageOffset } ++
+            Array(mTo.assembly.inOwners(mToConnectionIdx) + mToStageOffset) ++
+            Array.fill(mFromOriginalInIdxs.size + mToOriginalInIdxs.size)(-1)
+
+        val outs =
+          Array.fill[Outlet[_]](mFromOriginalOutIdxs.size + mToOriginalOutIdx.size)(null) ++
+            mFrom.assembly.outs.zipWithIndex.collect { case (out, idx) if mFromConnectionIdxs.contains(idx) ⇒ out } ++
+            mTo.assembly.outs.zipWithIndex.collect { case (out, idx) if mToConnectionIdxs.contains(idx) ⇒ out } ++
+            Array(mFrom.assembly.outs(mFromConnectionIdx)) ++
+            mFrom.assembly.outs.zipWithIndex.collect { case (out, idx) if mFromOriginalInIdxs.contains(idx) ⇒ out } ++
+            mTo.assembly.outs.zipWithIndex.collect { case (out, idx) if mToOriginalInIdxs.contains(idx) ⇒ out }
+
+        val outOwners =
+          Array.fill(mFromOriginalOutIdxs.size + mToOriginalOutIdx.size)(-1) ++
+            mFrom.assembly.outOwners.zipWithIndex.collect { case (out, idx) if mFromConnectionIdxs.contains(idx) ⇒ out } ++
+            mTo.assembly.outOwners.zipWithIndex.collect { case (out, idx) if mToConnectionIdxs.contains(idx) ⇒ out + mToStageOffset } ++
+            Array(mFrom.assembly.outOwners(mFromConnectionIdx)) ++
+            mFrom.assembly.outOwners.zipWithIndex.collect { case (out, idx) if mFromOriginalInIdxs.contains(idx) ⇒ out } ++
+            mTo.assembly.outOwners.zipWithIndex.collect { case (out, idx) if mToOriginalInIdxs.contains(idx) ⇒ out + mToStageOffset }
+
+        val fused = GraphModule(new GraphAssembly(
+          mFrom.assembly.stages ++ mTo.assembly.stages,
+          mFrom.assembly.originalAttributes ++ mTo.assembly.originalAttributes,
+          ins,
+          inOwners,
+          outs,
+          outOwners), fusedShape, mFrom.attributes)
+
+        println("New fused module: " + fused)
+
+        val cm = CompositeModule(
+          subs + fused,
+          newEnclosingShape,
+          downstreams,
+          upstreams,
+          Ignore,
+          attributes)
+        if (Debug) validate(cm)
+        cm
+      } else {
+        CompositeModule(
+          subModules,
+          AmorphousShape(shape.inlets.filterNot(_ == to), shape.outlets.filterNot(_ == from)),
+          downstreams.updated(from, to),
+          upstreams.updated(to, from),
+          materializedValueComputation,
+          attributes)
+      }
     }
 
     final def transformMaterializedValue(f: Any ⇒ Any): Module = {
@@ -312,7 +422,7 @@ private[akka] object StreamLayout {
 
     override def isCopied: Boolean = true
 
-    override def toString: String = "copy of " + copyOf.toString
+    override def toString: String = s"copy of ${copyOf.toString} with shape $shape"
   }
 
   final case class CompositeModule(
@@ -332,13 +442,15 @@ private[akka] object StreamLayout {
 
     override def withAttributes(attributes: Attributes): Module = copy(attributes = attributes)
 
-    override def toString =
+    override def toString = {
+      def toS(l: AnyRef) = s"{${l.toString}[${l.hashCode}]}"
       s"""
-        | Module: ${this.attributes.nameOrDefault("unnamed")}
-        | Modules: ${subModules.iterator.map(m ⇒ "\n   " + m.attributes.nameOrDefault(m.getClass.getName)).mkString("")}
-        | Downstreams: ${downstreams.iterator.map { case (in, out) ⇒ s"\n   $in -> $out" }.mkString("")}
-        | Upstreams: ${upstreams.iterator.map { case (out, in) ⇒ s"\n   $out -> $in" }.mkString("")}
+        | Module: ${this.attributes.nameOrDefault("unnamed")}, sealed: $isSealed, shape: $shape
+        | Modules: ${subModules.iterator.map(m ⇒ s"\n   $m").mkString("")}
+        | Downstreams: ${downstreams.iterator.map { case (in, out) ⇒ s"\n   ${toS(in)} -> ${toS(out)}" }.mkString("")}
+        | Upstreams: ${upstreams.iterator.map { case (out, in) ⇒ s"\n   ${toS(out)} -> ${toS(in)}" }.mkString("")}
         |""".stripMargin
+    }
   }
 }
 
@@ -684,12 +796,15 @@ private[stream] abstract class MaterializerSession(val topLevel: StreamLayout.Mo
           materializedValues.put(mv, ())
           assignPort(mv.shape.outlet, pub)
         case atomic if atomic.isAtomic ⇒
+          println("mat atomix")
           materializedValues.put(atomic, materializeAtomic(atomic, subEffectiveAttributes))
         case copied: CopiedModule ⇒
+          println("mat copied")
           enterScope(copied)
           materializedValues.put(copied, materializeModule(copied, subEffectiveAttributes))
           exitScope(copied)
         case composite ⇒
+          println("mat composite")
           materializedValues.put(composite, materializeComposite(composite, subEffectiveAttributes))
       }
     }

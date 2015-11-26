@@ -164,8 +164,11 @@ abstract class Shape {
    */
   def requireSamePortsAndShapeAs(s: Shape): Unit = require(hasSamePortsAndShapeAs(s), nonCorrespondingMessage(s))
 
-  private def nonCorrespondingMessage(s: Shape) =
-    s"The inlets [${s.inlets.mkString(", ")}] and outlets [${s.outlets.mkString(", ")}] must correspond to the inlets [${inlets.mkString(", ")}] and outlets [${outlets.mkString(", ")}]"
+  private def nonCorrespondingMessage(s: Shape) = {
+    def toS(l: AnyRef) = s"${l.toString}[${l.hashCode}]"
+    s"The inlets [${s.inlets.map(toS).mkString(", ")}] and outlets [${s.outlets.map(toS).mkString(", ")}] must correspond to the inlets [${inlets.map(toS).mkString(", ")}] and outlets [${outlets.map(toS).mkString(", ")}]"
+  }
+
 }
 
 /**
@@ -218,6 +221,11 @@ object ClosedShape extends ClosedShape {
 case class AmorphousShape(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Seq[Outlet[_]]) extends Shape {
   override def deepCopy() = AmorphousShape(inlets.map(_.carbonCopy()), outlets.map(_.carbonCopy()))
   override def copyFromPorts(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Seq[Outlet[_]]): Shape = AmorphousShape(inlets, outlets)
+
+  override def toString = {
+    def toS(l: AnyRef) = s"${l.toString}[${l.hashCode}]"
+    s"""AmorphousShape(${inlets.map(toS).mkString(",")}, ${outlets.map(toS).mkString(",")})"""
+  }
 }
 
 /**
@@ -256,6 +264,8 @@ final case class FlowShape[-I, +O](inlet: Inlet[I @uncheckedVariance], outlet: O
     require(outlets.size == 1, s"proposed outlets [${outlets.mkString(", ")}] do not fit FlowShape")
     FlowShape(inlets.head, outlets.head)
   }
+
+  override def toString = s"FlowShape($inlet[${inlet.hashCode}, $outlet[${outlet.hashCode}]])"
 }
 object FlowShape {
   /** Java API */

@@ -14,7 +14,7 @@ class InterpreterSpec extends AkkaSpec with GraphInterpreterSpecKit {
   import Supervision.stoppingDecider
 
   /*
-   * These tests were writtern for the previous veryion of the interpreter, the so called OneBoundedInterpreter.
+   * These tests were written for the previous version of the interpreter, the so called OneBoundedInterpreter.
    * These stages are now properly emulated by the GraphInterpreter and many of the edge cases were relevant to
    * the execution model of the old one. Still, these tests are very valuable, so please do not remove.
    */

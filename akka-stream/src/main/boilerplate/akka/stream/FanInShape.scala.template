@@ -46,6 +46,11 @@ abstract class FanInShape[+O] private (_out: Outlet[O @uncheckedVariance], _regi
     require(inlets.size == _inlets.size, s"proposed inlets [${inlets.mkString(", ")}] do not fit FanInShape")
     construct(Ports[O](outlets.head.asInstanceOf[Outlet[O]], inlets))
   }
+
+  override def toString = {
+    def toS(l: AnyRef) = s"${l.toString}[${l.hashCode}]"
+    s"""FanInShape(${inlets.map(toS).mkString(",")}, ${toS(out)})"""
+  }
 }
 
 object UniformFanInShape {

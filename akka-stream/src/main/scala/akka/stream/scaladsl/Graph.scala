@@ -252,7 +252,7 @@ object Broadcast {
  *
  */
 class Broadcast[T](private val outputPorts: Int, eagerCancel: Boolean) extends GraphStage[UniformFanOutShape[T, T]] {
-  val in: Inlet[T] = Inlet[T]("Broadast.in")
+  val in: Inlet[T] = Inlet[T]("Broadcast.in")
   val out: immutable.IndexedSeq[Outlet[T]] = Vector.tabulate(outputPorts)(i ⇒ Outlet[T]("Broadcast.out" + i))
   override val shape: UniformFanOutShape[T, T] = UniformFanOutShape(in, out: _*)
 
