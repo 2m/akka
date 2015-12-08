@@ -59,7 +59,7 @@ public class StreamFileDocTest {
         Sink.foreach(chunk -> System.out.println(chunk.utf8String()));
 
       Future<Long> bytesWritten =
-        Source.file(file)
+        FileIO.fromFile(file)
           .to(printlnSink)
           .run(mat);
       //#file-source
@@ -75,7 +75,7 @@ public class StreamFileDocTest {
     try {
       Sink<ByteString, Future<Long>> byteStringFutureSink =
       //#custom-dispatcher-code
-      Sink.file(file)
+      FileIO.fromFile(file)
         .withAttributes(ActorAttributes.dispatcher("custom-blocking-io-dispatcher"));
       //#custom-dispatcher-code
     } finally {
