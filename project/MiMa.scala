@@ -35,10 +35,10 @@ object MiMa extends AutoPlugin {
       val akka242NewArtifacts = Seq(
         "akka-stream",
         "akka-http-core",
-        
+
         "akka-http-testkit",
         "akka-stream-testkit"
-        
+
         // TODO enable once not experimental anymore
         // "akka-http-experimental",
         // "akka-http-jackson-experimental",
@@ -600,6 +600,7 @@ object MiMa extends AutoPlugin {
       FilterAnyProblemStartingWith("akka.remote.testconductor.TestConductorProtocol"),
       FilterAnyProblemStartingWith("akka.cluster.protobuf.msg.ClusterMessages"),
       FilterAnyProblemStartingWith("akka.cluster.protobuf.ClusterMessageSerializer"),
+      FilterAnyProblemStartingWith("akka.protobuf") // after https://github.com/typesafehub/migration-manager/issues/118 fix
       // #13584 change in internal actor
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ClusterCoreDaemon.akka$cluster$ClusterCoreDaemon$$isJoiningToUp$1")
     )
@@ -740,12 +741,16 @@ object MiMa extends AutoPlugin {
         // #19390 Add flow monitor
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOpsMat.monitor"),
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GraphStages$TickSource$"),
-        
+
         FilterAnyProblemStartingWith("akka.http.impl"),
 
         // #20214
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.DefaultSSLContextCreation.createClientHttpsContext"),
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.DefaultSSLContextCreation.validateAndWarnAboutLooseSettings")
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.DefaultSSLContextCreation.validateAndWarnAboutLooseSettings"),
+
+        // introduced with https://github.com/akka/akka/pull/19626/files
+        // discovered after https://github.com/typesafehub/migration-manager/issues/118
+        ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.persistence.PersistenceStash.internalStashOverflowStrategy")
       ),
       "2.4.4" -> Seq(
         // #20080, #20081 remove race condition on HTTP client
@@ -779,7 +784,7 @@ object MiMa extends AutoPlugin {
         // #20293 Use JDK7 NIO Path instead of File
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpMessage#MessageTransformations.withEntity"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpMessage.withEntity"),
-        
+
         // #20401 custom media types registering
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.model.parser.CommonActions.customMediaTypes"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.model.parser.HeaderParser.Settings"),
@@ -788,7 +793,7 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ParserSettingsImpl.apply"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ParserSettingsImpl.copy"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ParserSettingsImpl.this"),
-        
+
         // #20123
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.recoverWithRetries"),
 
@@ -816,11 +821,11 @@ object MiMa extends AutoPlugin {
 
         // #20131 - flow combinator
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.backpressureTimeout"),
-        
+
         // #20470 - new JavaDSL for Akka HTTP
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.DateTime.plus"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.DateTime.minus"),
-        
+
         // #20214
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.DefaultSSLContextCreation.createClientHttpsContext"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.DefaultSSLContextCreation.validateAndWarnAboutLooseSettings"),
@@ -852,8 +857,8 @@ object MiMa extends AutoPlugin {
         FilterAnyProblemStartingWith("akka.stream.impl"),
 
         // #20214 SNI disabling for single connections (AkkaSSLConfig being passed around)
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.ConnectionContext.sslConfig"), // class meant only for internal extension 
-        
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.ConnectionContext.sslConfig"), // class meant only for internal extension
+
         //#20229 migrate GroupBy to GraphStage
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.GraphDSL#Builder.deprecatedAndThen"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Flow.deprecatedAndThen"),
@@ -877,7 +882,7 @@ object MiMa extends AutoPlugin {
 
         // #20414 Allow different ActorMaterializer subtypes
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.ActorMaterializer.downcast"),
-        
+
         // #20531 adding refuseUid to Gated
         FilterAnyProblem("akka.remote.EndpointManager$Gated"),
 
