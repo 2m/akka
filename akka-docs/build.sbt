@@ -1,22 +1,22 @@
 import akka.{ AkkaBuild, Dependencies, Formatting, GitHub }
 import akka.ValidatePullRequest._
-import com.typesafe.sbt.SbtScalariform.ScalariformKeys
+//import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 
 AkkaBuild.defaultSettings
 AkkaBuild.dontPublishSettings
 Formatting.docFormatSettings
 Dependencies.docs
 
-unmanagedSourceDirectories in ScalariformKeys.format in Test := (unmanagedSourceDirectories in Test).value
-additionalTasks in ValidatePR += paradox in Compile
+//unmanagedSourceDirectories in ScalariformKeys.format in Test := (unmanagedSourceDirectories in Test).value
+//additionalTasks in ValidatePR += paradox in Compile
 
 enablePlugins(ScaladocNoVerificationOfDiagrams)
-disablePlugins(MimaPlugin)
-enablePlugins(AkkaParadoxPlugin)
+//disablePlugins(MimaPlugin)
+//enablePlugins(AkkaParadoxPlugin)
 
-name in (Compile, paradox) := "Akka"
+//name in (Compile, paradox) := "Akka"
 
-paradoxProperties ++= Map(
+/*paradoxProperties ++= Map(
   "akka.canonical.base_url" -> "http://doc.akka.io/docs/akka/current",
   "github.base_url" -> GitHub.url(version.value), // for links like this: @github[#1](#1) or @github[83986f9](83986f9)
   "extref.wikipedia.base_url" -> "https://en.wikipedia.org/wiki/%s",
@@ -34,7 +34,7 @@ paradoxProperties ++= Map(
   "snip.code.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath,
   "snip.akka.base_dir" -> ((baseDirectory in Test).value / "..").getAbsolutePath,
   "fiddle.code.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath
-)
-paradoxGroups := Map("Languages" -> Seq("Scala", "Java"))
+)*/
+//paradoxGroups := Map("Languages" -> Seq("Scala", "Java"))
 
 resolvers += Resolver.jcenterRepo

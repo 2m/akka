@@ -5,4 +5,4 @@ AkkaBuild.dontPublishSettings
 Formatting.formatSettings
 Dependencies.streamTests
 
-disablePlugins(MimaPlugin)
+//disablePlugins(MimaPlugin)

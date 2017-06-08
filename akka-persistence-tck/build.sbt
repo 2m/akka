@@ -7,4 +7,4 @@ Dependencies.persistenceTck
 
 fork in Test := true
 
-disablePlugins(MimaPlugin)
+//disablePlugins(MimaPlugin)

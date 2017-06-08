@@ -3,9 +3,9 @@
  */
 package akka
 
-import com.typesafe.sbt.osgi.OsgiKeys
-import com.typesafe.sbt.osgi.SbtOsgi._
-import com.typesafe.sbt.osgi.SbtOsgi.autoImport._
+//import com.typesafe.sbt.osgi.OsgiKeys
+//import com.typesafe.sbt.osgi.SbtOsgi._
+//import com.typesafe.sbt.osgi.SbtOsgi.autoImport._
 import sbt._
 import sbt.Keys._
 
@@ -14,36 +14,36 @@ object OSGi {
   // The included osgiSettings that creates bundles also publish the jar files
   // in the .../bundles directory which makes testing locally published artifacts
   // a pain. Create bundles but publish them to the normal .../jars directory.
-  def osgiSettings = defaultOsgiSettings ++ Seq(
+  /*def osgiSettings = defaultOsgiSettings ++ Seq(
     packagedArtifact in (Compile, packageBin) := ((artifact in (Compile, packageBin)).value, OsgiKeys.bundle.value),
     // This will fail the build instead of accidentally removing classes from the resulting artifact.
     // Each package contained in a project MUST be known to be private or exported, if it's undecided we MUST resolve this
     OsgiKeys.failOnUndecidedPackage := true,
     // By default an entry is generated from module group-id, but our modules do not adhere to such package naming
     OsgiKeys.privatePackage := Seq()
-  )
+  )*/
 
-  val actor = osgiSettings ++ Seq(
+  val actor = /*osgiSettings ++ Seq(
     OsgiKeys.exportPackage := Seq("akka*"),
     OsgiKeys.privatePackage := Seq("akka.osgi.impl"),
     //akka-actor packages are not imported, as contained in the CP
     OsgiKeys.importPackage := (osgiOptionalImports map optionalResolution) ++ Seq("!sun.misc", scalaJava8CompatImport(), scalaVersion(scalaImport).value, configImport(), "*"),
     // dynamicImportPackage needed for loading classes defined in configuration
     OsgiKeys.dynamicImportPackage := Seq("*")
-  )
+  )*/ Nil
 
   val agent = exports(Seq("akka.agent.*"))
 
   val camel = exports(Seq("akka.camel.*"))
 
   val cluster = exports(Seq("akka.cluster.*"))
-  
+
   val clusterTools = exports(Seq("akka.cluster.singleton.*", "akka.cluster.client.*", "akka.cluster.pubsub.*"))
-      
-  val clusterSharding = exports(Seq("akka.cluster.sharding.*"))    
+
+  val clusterSharding = exports(Seq("akka.cluster.sharding.*"))
 
   val clusterMetrics = exports(Seq("akka.cluster.metrics.*"), imports = Seq(kamonImport(), sigarImport()))
-  
+
   val distributedData = exports(Seq("akka.cluster.ddata.*"))
 
   val contrib = exports(Seq("akka.contrib.*"))
@@ -59,7 +59,7 @@ object OSGi {
 
   val httpCore = exports(Seq("akka.http.*"), imports = Seq(scalaJava8CompatImport()))
 
-  val http = exports(Seq("akka.http.impl.server") ++ 
+  val http = exports(Seq("akka.http.impl.server") ++
     Seq(
       "akka.http.$DSL$.server.*",
       "akka.http.$DSL$.client.*",
@@ -68,7 +68,7 @@ object OSGi {
       "akka.http.$DSL$.marshalling.*",
       "akka.http.$DSL$.unmarshalling.*"
     ) flatMap { p =>
-      Seq(p.replace("$DSL$", "scaladsl"), p.replace("$DSL$", "javadsl"))  
+      Seq(p.replace("$DSL$", "scaladsl"), p.replace("$DSL$", "javadsl"))
     },
     imports = Seq(
       scalaJava8CompatImport(),
@@ -88,8 +88,8 @@ object OSGi {
     exports(
       packages = Seq("akka.stream.*",
                      "com.typesafe.sslconfig.akka.*"),
-      imports = Seq(scalaJava8CompatImport(), scalaParsingCombinatorImport())) ++
-      Seq(OsgiKeys.requireBundle := Seq(s"""com.typesafe.sslconfig;bundle-version="${Dependencies.sslConfigVersion}""""))
+      imports = Seq(scalaJava8CompatImport(), scalaParsingCombinatorImport())) /*++
+      Seq(OsgiKeys.requireBundle := Seq(s"""com.typesafe.sslconfig;bundle-version="${Dependencies.sslConfigVersion}""""))*/
 
   val streamTestkit = exports(Seq("akka.stream.testkit.*"))
 
@@ -108,10 +108,10 @@ object OSGi {
     // to be able to find reference.conf
     "akka.testkit")
 
-  def exports(packages: Seq[String] = Seq(), imports: Seq[String] = Nil) = osgiSettings ++ Seq(
+  def exports(packages: Seq[String] = Seq(), imports: Seq[String] = Nil) = /*osgiSettings ++ Seq(
     OsgiKeys.importPackage := imports ++ scalaVersion(defaultImports).value,
     OsgiKeys.exportPackage := packages
-  )
+  )*/ Nil
   def defaultImports(scalaVersion: String) = Seq("!sun.misc", akkaImport(), configImport(), "!scala.compat.java8.*",
     "!scala.util.parsing.*", scalaImport(scalaVersion), "*")
   def akkaImport(packageName: String = "akka.*") = versionedImport(packageName, "2.5", "2.6")

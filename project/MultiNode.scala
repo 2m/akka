@@ -5,14 +5,14 @@ package akka
 
 import akka.TestExtras.Filter
 import akka.TestExtras.Filter.Keys._
-import com.typesafe.sbt.{SbtScalariform, SbtMultiJvm}
-import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys._
-import com.typesafe.sbt.SbtScalariform.ScalariformKeys
+//import com.typesafe.sbt.{SbtScalariform, SbtMultiJvm}
+//import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys._
+//import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 import sbt._
 import sbt.Keys._
 
 object MultiNode extends AutoPlugin {
-  
+
   // MultiJvm tests can be excluded from normal test target an validatePullRequest
   // with -Dakka.test.multi-in-test=false
   val multiNodeTestInTest: Boolean =
@@ -27,13 +27,13 @@ object MultiNode extends AutoPlugin {
     val targetDirName = sys.props.get("akka.test.multi-node.targetDirName").toSeq
   }
 
-  val multiExecuteTests = CliOptions.multiNode.ifTrue(multiNodeExecuteTests in MultiJvm).getOrElse(executeTests in MultiJvm)
-  val multiTest = CliOptions.multiNode.ifTrue(multiNodeTest in MultiJvm).getOrElse(test in MultiJvm)
+  //val multiExecuteTests = CliOptions.multiNode.ifTrue(multiNodeExecuteTests in MultiJvm).getOrElse(executeTests in MultiJvm)
+  //val multiTest = CliOptions.multiNode.ifTrue(multiNodeTest in MultiJvm).getOrElse(test in MultiJvm)
 
   override def trigger = noTrigger
   override def requires = plugins.JvmPlugin
 
-  override lazy val projectSettings = multiJvmSettings
+  override lazy val projectSettings = /*multiJvmSettings*/ Nil
 
   private val defaultMultiJvmOptions: Seq[String] = {
     import scala.collection.JavaConverters._
@@ -53,7 +53,7 @@ object MultiNode extends AutoPlugin {
     "-Xmx256m" :: akkaProperties ::: CliOptions.sbtLogNoFormat.ifTrue("-Dakka.test.nocolor=true").toList
   }
 
-  private val multiJvmSettings =
+  /*private val multiJvmSettings =
     SbtMultiJvm.multiJvmSettings ++
     inConfig(MultiJvm)(SbtScalariform.configScalariformSettings) ++
     Seq(
@@ -80,7 +80,7 @@ object MultiNode extends AutoPlugin {
           testResults.events ++ multiNodeResults.events,
           testResults.summaries ++ multiNodeResults.summaries)
       }
-    } else Nil)
+    } else Nil)*/
 }
 
 /**
@@ -91,7 +91,7 @@ object MultiNodeScalaTest extends AutoPlugin {
   override def requires = MultiNode
 
   override lazy val projectSettings = Seq(
-    extraOptions in MultiJvm := {
+    /*extraOptions in MultiJvm := {
       val src = (sourceDirectory in MultiJvm).value
       (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
     },
@@ -99,6 +99,6 @@ object MultiNodeScalaTest extends AutoPlugin {
       Seq("-C", "org.scalatest.extra.QuietReporter") ++
         (if (excludeTestTags.value.isEmpty) Seq.empty else Seq("-l", if (MultiNode.CliOptions.multiNode.get) excludeTestTags.value.mkString("\"", " ", "\"") else excludeTestTags.value.mkString(" "))) ++
         (if (onlyTestTags.value.isEmpty) Seq.empty else Seq("-n", if (MultiNode.CliOptions.multiNode.get) onlyTestTags.value.mkString("\"", " ", "\"") else onlyTestTags.value.mkString(" ")))
-    }
+    }*/
   )
 }

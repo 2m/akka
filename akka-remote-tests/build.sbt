@@ -1,5 +1,5 @@
 import akka.{ AkkaBuild, Dependencies, Formatting, MultiNodeScalaTest, Unidoc }
-import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys._
+//import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys._
 
 AkkaBuild.defaultSettings
 AkkaBuild.dontPublishSettings
@@ -11,4 +11,4 @@ parallelExecution in Test := false
 publishArtifact in Compile := false
 
 enablePlugins(MultiNodeScalaTest)
-disablePlugins(MimaPlugin)
+//disablePlugins(MimaPlugin)

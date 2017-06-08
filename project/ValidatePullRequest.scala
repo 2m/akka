@@ -3,18 +3,19 @@
  */
 package akka
 
-import com.typesafe.tools.mima.plugin.MimaKeys.mimaReportBinaryIssues
-import com.typesafe.tools.mima.plugin.MimaPlugin
-import net.virtualvoid.sbt.graph.backend.SbtUpdateReport
-import net.virtualvoid.sbt.graph.DependencyGraphKeys._
-import net.virtualvoid.sbt.graph.ModuleGraph
+//import com.typesafe.tools.mima.plugin.MimaKeys.mimaReportBinaryIssues
+//import com.typesafe.tools.mima.plugin.MimaPlugin
+//import net.virtualvoid.sbt.graph.backend.SbtUpdateReport
+//import net.virtualvoid.sbt.graph.DependencyGraphKeys._
+//import net.virtualvoid.sbt.graph.ModuleGraph
 import org.kohsuke.github._
-import sbtunidoc.Plugin.UnidocKeys.unidoc
+//import sbtunidoc.Plugin.UnidocKeys.unidoc
 import sbt.Keys._
 import sbt._
 
 import scala.collection.immutable
 import scala.util.matching.Regex
+import scala.sys.process._
 
 object ValidatePullRequest extends AutoPlugin {
 
@@ -80,7 +81,7 @@ object ValidatePullRequest extends AutoPlugin {
   val validatePullRequest = taskKey[Unit]("Validate pull request")
   val additionalTasks = taskKey[Seq[TaskKey[_]]]("Additional tasks for pull request validation")
 
-  def changedDirectoryIsDependency(changedDirs: Set[String],
+  /*def changedDirectoryIsDependency(changedDirs: Set[String],
                                     name: String,
                                     graphsToTest: Seq[(Configuration, ModuleGraph)])(log: Logger): Boolean = {
     graphsToTest exists { case (ivyScope, deps) =>
@@ -97,7 +98,7 @@ object ValidatePullRequest extends AutoPlugin {
         depends
       }
     }
-  }
+  }*/
 
   def localTargetBranch: Option[String] = sys.env.get("PR_TARGET_BRANCH")
   def jenkinsTargetBranch: Option[String] = sys.env.get("ghprbTargetBranch")
@@ -122,9 +123,9 @@ object ValidatePullRequest extends AutoPlugin {
     buildAllKeyword in Global in ValidatePR := """PLS BUILD ALL""".r,
 
     githubEnforcedBuildAll in Global in ValidatePR := {
+      val log = streams.value.log
+      val buildAllMagicPhrase = (buildAllKeyword in ValidatePR).value
       sys.env.get(PullIdEnvVarName).map(_.toInt) flatMap { prId =>
-        val log = streams.value.log
-        val buildAllMagicPhrase = (buildAllKeyword in ValidatePR).value
         log.info("Checking GitHub comments for PR validation options...")
 
         try {
@@ -197,7 +198,7 @@ object ValidatePullRequest extends AutoPlugin {
 
       val thisProjectId = CrossVersion(scalaVersion.value, scalaBinaryVersion.value)(projectID.value)
 
-      def graphFor(updateReport: UpdateReport, config: Configuration): (Configuration, ModuleGraph) =
+      /*def graphFor(updateReport: UpdateReport, config: Configuration): (Configuration, ModuleGraph) =
         config -> SbtUpdateReport.fromConfigurationReport(updateReport.configuration(config.name).get, thisProjectId)
 
       def isDependency: Boolean =
@@ -209,16 +210,17 @@ object ValidatePullRequest extends AutoPlugin {
             graphFor((update in Test).value, Test),
             graphFor((update in Runtime).value, Runtime),
             graphFor((update in Provided).value, Provided),
-            graphFor((update in Optional).value, Optional)))(log)
+            graphFor((update in Optional).value, Optional)))(log)*/
 
-      if (githubCommandEnforcedBuildAll.isDefined)
+      /*if (githubCommandEnforcedBuildAll.isDefined)
         githubCommandEnforcedBuildAll.get
       else if (changedDirs contains "project")
         BuildProjectChangedQuick
       else if (isDependency)
         BuildQuick
       else
-        BuildSkip
+        BuildSkip*/
+      BuildSkip
     },
 
     additionalTasks in ValidatePR := Seq.empty,
@@ -264,8 +266,8 @@ object MultiNodeWithPrValidation extends AutoPlugin {
   override def trigger = allRequirements
   override def requires = ValidatePullRequest && MultiNode
   override lazy val projectSettings =
-    if (MultiNode.multiNodeTestInTest) Seq(additionalTasks in ValidatePR += MultiNode.multiTest)
-    else Nil
+    /*if (MultiNode.multiNodeTestInTest) Seq(additionalTasks in ValidatePR += MultiNode.multiTest)
+    else*/ Nil
 }
 
 /**
@@ -276,9 +278,9 @@ object MimaWithPrValidation extends AutoPlugin {
   import ValidatePullRequest._
 
   override def trigger = allRequirements
-  override def requires = ValidatePullRequest && MimaPlugin
+  override def requires = ValidatePullRequest //&& MimaPlugin
   override lazy val projectSettings = Seq(
-    additionalTasks in ValidatePR += mimaReportBinaryIssues
+    //additionalTasks in ValidatePR += mimaReportBinaryIssues
   )
 }
 
@@ -287,6 +289,6 @@ object UnidocWithPrValidation extends AutoPlugin {
 
   override def trigger = noTrigger
   override lazy val projectSettings = Seq(
-    additionalTasks in ValidatePR += unidoc in Compile
+    //additionalTasks in ValidatePR += unidoc in Compile
   )
 }

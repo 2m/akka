@@ -7,7 +7,9 @@ package akka
 import sbt._
 import Process._
 import Keys._
-import com.typesafe.sbt.preprocess.Preprocess._
+//import com.typesafe.sbt.preprocess.Preprocess._
+
+import scala.sys.process._
 
 import java.io.File
 
@@ -26,18 +28,19 @@ object Protobuf {
     generate := {
       val sourceDirs = paths.value
       val targetDirs = outputPaths.value
+      val base = baseDirectory.value
+      val targets = target.value
+      val protocv = protocVersion.value
+      val log = streams.value.log
+      val cmd = protoc.value
 
       if (sourceDirs.size != targetDirs.size)
         sys.error(s"Unbalanced number of paths and destination paths!\nPaths: $sourceDirs\nDestination Paths: $targetDirs")
 
       if (sourceDirs exists (_.exists)) {
-        val cmd = protoc.value
-        val log = streams.value.log
-        checkProtocVersion(cmd, protocVersion.value, log)
+        checkProtocVersion(cmd, protocv, log)
 
-        val base = baseDirectory.value
         val sources = base / "src"
-        val targets = target.value
         val cache = targets / "protoc" / "cache"
 
         (sourceDirs zip targetDirs) map { case (src, dst) =>
@@ -45,7 +48,8 @@ object Protobuf {
           val tmp = targets / "protoc" / relative
           IO.delete(tmp)
           generate(cmd, src, tmp, log)
-          transformDirectory(tmp, dst, _ => true, transformFile(_.replace("com.google.protobuf", "akka.protobuf")), cache, log)
+          //transformDirectory(tmp, dst, _ => true, transformFile(_.replace("com.google.protobuf", "akka.protobuf")), cache, log)
+          dst
         }
       }
     }

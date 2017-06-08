@@ -3,33 +3,34 @@
  */
 package akka
 
-import com.typesafe.tools.mima.core.ProblemFilters
+//import com.typesafe.tools.mima.core.ProblemFilters
 import sbt._
 import sbt.Keys._
-import com.typesafe.tools.mima.plugin.MimaPlugin
-import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
+//import com.typesafe.tools.mima.plugin.MimaPlugin
+//import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
 
 import scala.util.Try
 
 object MiMa extends AutoPlugin {
 
-  override def requires = MimaPlugin
+  //override def requires = MimaPlugin
   override def trigger = allRequirements
 
-  override val projectSettings = Seq(
+  /*override val projectSettings = Seq(
     mimaBackwardIssueFilters ++= mimaIgnoredProblems,
     mimaPreviousArtifacts := akkaPreviousArtifacts(name.value, organization.value, scalaBinaryVersion.value)
-  )
+  )*/
 
   def akkaPreviousArtifacts(projectName: String, organization: String, scalaBinaryVersion: String): Set[sbt.ModuleID] = {
     val versions: Seq[String] = {
-      def latestMinorVersionOf(major: String) = mimaIgnoredProblems.keys
+      def latestMinorVersionOf(major: String) = /*mimaIgnoredProblems.keys
         .map(_.stripPrefix(major))
         .map(minor => scala.util.Try(minor.toInt))
         .collect {
           case scala.util.Success(m) => m
         }
-        .max
+        .max*/
+        2
 
       val akka24NoStreamVersions = Seq("2.4.0", "2.4.1")
       val akka25Versions = (0 to latestMinorVersionOf("2.5.")).map(patch => s"2.5.$patch")
@@ -77,24 +78,24 @@ object MiMa extends AutoPlugin {
     }.toSet
   }
 
-  case class FilterAnyProblem(name: String) extends com.typesafe.tools.mima.core.ProblemFilter {
+  /*case class FilterAnyProblem(name: String) extends com.typesafe.tools.mima.core.ProblemFilter {
     import com.typesafe.tools.mima.core._
     override def apply(p: Problem): Boolean = p match {
       case t: TemplateProblem => t.ref.fullName != name && t.ref.fullName != (name + '$')
       case m: MemberProblem => m.ref.owner.fullName != name && m.ref.owner.fullName != (name + '$')
     }
-  }
+  }*/
 
-  case class FilterAnyProblemStartingWith(start: String) extends com.typesafe.tools.mima.core.ProblemFilter {
+  /*case class FilterAnyProblemStartingWith(start: String) extends com.typesafe.tools.mima.core.ProblemFilter {
     import com.typesafe.tools.mima.core._
     override def apply(p: Problem): Boolean = p match {
       case t: TemplateProblem => !t.ref.fullName.startsWith(start)
       case m: MemberProblem => !m.ref.owner.fullName.startsWith(start)
     }
-  }
+  }*/
 
   def mimaIgnoredProblems = {
-    import com.typesafe.tools.mima.core._
+    /*import com.typesafe.tools.mima.core._
 
     val bcIssuesBetween24and25 = Seq(
       // ##22269 GSet as delta-CRDT
@@ -530,7 +531,7 @@ object MiMa extends AutoPlugin {
       // small changes in attributes
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.testkit.StreamTestKit#ProbeSource.withAttributes"),
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.testkit.StreamTestKit#ProbeSink.withAttributes"),
-      
+
       // #22332 protobuf serializers for remote deployment
       ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.getConfigManifest"),
       ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.hasScopeManifest"),
@@ -1197,7 +1198,7 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.watchWith"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.akka$actor$dungeon$DeathWatch$$watching"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.akka$actor$dungeon$DeathWatch$$watching_="),
-        
+
         // #22881 Make sure connections are aborted correctly on Windows
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.io.ChannelRegistration.cancel"),
 
@@ -1207,7 +1208,7 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.DDataShardCoordinator.getState"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.DDataShardCoordinator.waitingForState"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.DDataShardCoordinator.this"),
-          
+
         // #21213 Feature request: Let BackoffSupervisor reply to messages when its child is stopped
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffSupervisor.this"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffOptionsImpl.copy"),
@@ -1224,6 +1225,7 @@ object MiMa extends AutoPlugin {
     val AllFilters =
       Release25Filters ++ Release24Filters.dropRight(1) :+ (Latest24Filters._1 -> (Latest24Filters._2 ++ bcIssuesBetween24and25))
 
-    Map(AllFilters: _*)
+    Map(AllFilters: _*)*/
+    Map.empty
   }
 }

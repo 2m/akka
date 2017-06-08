@@ -4,7 +4,7 @@ AkkaBuild.defaultSettings
 AkkaBuild.mayChangeSettings
 Formatting.formatSettings
 
-disablePlugins(MimaPlugin)
+//disablePlugins(MimaPlugin)
 
 initialCommands := """
   import akka.typed._

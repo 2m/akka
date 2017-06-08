@@ -5,4 +5,4 @@ Formatting.formatSettings
 OSGi.protobuf
 
 enablePlugins(ScaladocNoVerificationOfDiagrams)
-disablePlugins(MimaPlugin)
+//disablePlugins(MimaPlugin)

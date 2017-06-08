@@ -8,9 +8,10 @@ import java.io.{FileInputStream, InputStreamReader}
 import java.util.Properties
 
 import akka.TestExtras.JUnitFileReporting
-import com.typesafe.sbt.pgp.PgpKeys.publishSigned
+//import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 import sbt.Keys._
-import sbt.{TestResult, _}
+import sbt._
+import sbt.protocol.testing.TestResult
 
 object AkkaBuild {
 
@@ -30,7 +31,7 @@ object AkkaBuild {
     )
 
   val dontPublishSettings = Seq(
-    publishSigned := (),
+    //publishSigned := (),
     publish := (),
     publishArtifact in Compile := false
   )
@@ -98,7 +99,7 @@ object AkkaBuild {
     javacOptions in compile ++= Seq("-encoding", "UTF-8", "-source", "1.8", "-target", "1.8", "-Xlint:unchecked", "-XDignore.symbol.file"),
     javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
     javacOptions in doc ++= Seq(),
-    incOptions := incOptions.value.withNameHashing(true),
+    //incOptions := incOptions.value.withNameHashing(true),
 
     crossVersion := CrossVersion.binary,
 
@@ -141,14 +142,14 @@ object AkkaBuild {
       val log = streams.value.log
       Seq(new TestsListener {
         def doInit(): Unit = ()
-        def doComplete(finalResult: TestResult.Value): Unit = ()
+        def doComplete(finalResult: TestResult): Unit = ()
         def startGroup(name: String): Unit = ()
         def testEvent(event: TestEvent): Unit = ()
         def endGroup(name: String, t: Throwable): Unit = {
           log.trace(t)
           log.error("Could not run test " + name + ": " + t.toString)
         }
-        def endGroup(name: String, result: TestResult.Value): Unit = ()
+        def endGroup(name: String, result: TestResult): Unit = ()
       })
     },
 

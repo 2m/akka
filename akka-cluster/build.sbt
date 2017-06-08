@@ -1,5 +1,5 @@
 import akka.{ AkkaBuild, Dependencies, Formatting, OSGi, MultiNodeScalaTest }
-import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys._
+//import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys._
 
 AkkaBuild.defaultSettings
 Formatting.formatSettings

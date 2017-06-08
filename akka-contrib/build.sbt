@@ -17,4 +17,4 @@ description := """|
                   |""".stripMargin
 
 enablePlugins(MultiNode, ScaladocNoVerificationOfDiagrams)
-disablePlugins(MimaPlugin)
+//disablePlugins(MimaPlugin)

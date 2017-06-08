@@ -1,7 +1,7 @@
 enablePlugins(akka.UnidocRoot, akka.TimeStampede, akka.UnidocWithPrValidation)
-disablePlugins(MimaPlugin)
-import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
-import com.typesafe.tools.mima.plugin.MimaPlugin
+//disablePlugins(akka.MimaPlugin)
+//import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
+//import com.typesafe.tools.mima.plugin.MimaPlugin
 import akka.AkkaBuild._
 
 initialize := {
@@ -14,7 +14,7 @@ akka.AkkaBuild.buildSettings
 shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
 resolverSettings
 
-lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
+lazy val aggregatedProjects: Seq[sbt.util.Eval[sbt.ProjectReference]] = Seq(
   actor, actorTests,
   agent,
   benchJmh,
@@ -34,12 +34,11 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   typed, typedTests, typedTestkit
 )
 
-lazy val root = Project(
-  id = "akka",
-  base = file("."),
-  aggregate = aggregatedProjects
-).settings(rootSettings: _*)
- .settings(unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, protobuf, akkaScalaNightly, docs))
+lazy val `akka-root` = project
+  .in(file("."))
+  .aggregate(aggregatedProjects: _*)
+  .settings(rootSettings: _*)
+  .settings(unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, protobuf, akkaScalaNightly, docs))
 
 lazy val actor = akkaModule("akka-actor")
 
@@ -52,16 +51,16 @@ lazy val agent = akkaModule("akka-agent")
 lazy val akkaScalaNightly = akkaModule("akka-scala-nightly")
   // remove dependencies that we have to build ourselves (Scala STM)
   .aggregate(aggregatedProjects diff List[ProjectReference](agent, docs): _*)
-  .disablePlugins(ValidatePullRequest, MimaPlugin)
+  .disablePlugins(ValidatePullRequest/*, MimaPlugin*/)
 
 lazy val benchJmh = akkaModule("akka-bench-jmh")
   .dependsOn(
-    Seq(
+    //Seq(
       actor,
       stream, streamTests,
       persistence, distributedData,
       testkit
-    ).map(_ % "compile->compile;compile->test;provided->provided"): _*
+    //)//.map(_ % "compile->compile;compile->test;provided->provided")
   ).disablePlugins(ValidatePullRequest)
 
 lazy val camel = akkaModule("akka-camel")
@@ -69,11 +68,11 @@ lazy val camel = akkaModule("akka-camel")
 
 lazy val cluster = akkaModule("akka-cluster")
   .dependsOn(remote, remoteTests % "test->test" , testkit % "test->test")
-  .configs(MultiJvm)
+  //.configs(MultiJvm)
 
 lazy val clusterMetrics = akkaModule("akka-cluster-metrics")
   .dependsOn(cluster % "compile->compile;test->test;multi-jvm->multi-jvm", slf4j % "test->compile")
-  .configs(MultiJvm)
+  //.configs(MultiJvm)
 
 lazy val clusterSharding = akkaModule("akka-cluster-sharding")
   // TODO akka-persistence dependency should be provided in pom.xml artifact.
@@ -85,19 +84,19 @@ lazy val clusterSharding = akkaModule("akka-cluster-sharding")
   distributedData,
   persistence % "compile->compile;test->provided",
   clusterTools)
-  .configs(MultiJvm)
+  //.configs(MultiJvm)
 
 lazy val clusterTools = akkaModule("akka-cluster-tools")
   .dependsOn(cluster % "compile->compile;test->test;multi-jvm->multi-jvm")
-  .configs(MultiJvm)
+  //.configs(MultiJvm)
 
 lazy val contrib = akkaModule("akka-contrib")
   .dependsOn(remote, remoteTests % "test->test", cluster, clusterTools, persistence % "compile->compile;test->provided")
-  .configs(MultiJvm)
+  //.configs(MultiJvm)
 
 lazy val distributedData = akkaModule("akka-distributed-data")
   .dependsOn(cluster % "compile->compile;test->test;multi-jvm->multi-jvm")
-  .configs(MultiJvm)
+  //.configs(MultiJvm)
 
 lazy val docs = akkaModule("akka-docs")
   .dependsOn(
@@ -139,7 +138,7 @@ lazy val remote = akkaModule("akka-remote")
 
 lazy val remoteTests = akkaModule("akka-remote-tests")
   .dependsOn(actorTests % "test->test", remote % "test->test", streamTestkit % "test", multiNodeTestkit)
-  .configs(MultiJvm)
+  //.configs(MultiJvm)
 
 lazy val slf4j = akkaModule("akka-slf4j")
   .dependsOn(actor, testkit % "test->test")
