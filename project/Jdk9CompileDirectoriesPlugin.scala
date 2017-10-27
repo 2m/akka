@@ -22,18 +22,17 @@ object Jdk9CompileDirectoriesPlugin extends AutoPlugin {
 
     unmanagedSourceDirectories in Compile ++= {
       if (isJDK9) {
-        println(s"[JDK9] Enabled [...-jdk9-only] directories to be compiled.")
         Seq(
-          (sourceDirectory in Compile).value / "java-jdk9-only",
-          (sourceDirectory in Compile).value / "scala-jdk9-only")
+          (sourceDirectory in Compile).value / "java-jdk-9",
+          (sourceDirectory in Compile).value / "scala-jdk-9")
       } else Seq.empty
     },
 
     unmanagedSourceDirectories in Test ++= {
       if (isJDK9) {
         Seq(
-          (sourceDirectory in Test).value / "java-jdk9-only",
-          (sourceDirectory in Test).value / "scala-jdk9-only")
+          (sourceDirectory in Test).value / "java-jdk-9",
+          (sourceDirectory in Test).value / "scala-jdk-9")
       } else Seq.empty
     })
 
