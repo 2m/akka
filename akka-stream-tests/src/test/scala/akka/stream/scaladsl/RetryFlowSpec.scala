@@ -5,13 +5,13 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.stream.{ ActorMaterializer, KillSwitches }
-import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
-import org.scalatest.matchers.{ MatchResult, Matcher }
+import akka.stream.{ActorMaterializer, KillSwitches}
+import akka.stream.testkit.{StreamSpec, Utils}
+import akka.stream.testkit.scaladsl.{TestSink, TestSource}
+import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.concurrent.duration._
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 
 class RetryFlowSpec extends StreamSpec() with CustomMatchers {
 
@@ -179,7 +179,7 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
     }
 
     "tolerate killswitch abort on the inner flow before start" in {
-      val innerFlow = flow[Int].viaMat(KillSwitches.single[(Try[Int], Int)])(Keep.right)
+      val innerFlow = flow[Int].via(Utils.delayCancellation(10.seconds)).viaMat(KillSwitches.single[(Try[Int], Int)])(Keep.right)
       val (killSwitch, sink) = TestSource
         .probe[Int]
         .map(i => (i, i))
